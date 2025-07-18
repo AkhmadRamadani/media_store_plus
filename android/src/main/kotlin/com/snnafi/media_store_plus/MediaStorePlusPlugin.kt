@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.service.autofill.SaveInfo
 import android.util.Log
 import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
@@ -48,6 +49,7 @@ class MediaStorePlusPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     private lateinit var uriString: String
     private lateinit var fileName: String
     private lateinit var tempFilePath: String
+    private var autoDeleteTempFile: Boolean = true
     private var dirType: Int = 0
     private lateinit var dirName: String
     private lateinit var appFolder: String
@@ -68,7 +70,8 @@ class MediaStorePlusPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                 call.argument("fileName")!!,
                 call.argument("appFolder")!!,
                 call.argument("dirType")!!,
-                call.argument("dirName")!!
+                call.argument("dirName")!!,
+                call.argument("autoDeleteTempFile")!!
             )
         } else if (call.method == "deleteFile") {
             deleteFile(
@@ -172,7 +175,8 @@ class MediaStorePlusPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         name: String,
         appFolder: String,
         dirType: Int,
-        dirName: String
+        dirName: String,
+        autoDeleteTempFile: Boolean,
     ) {
         try {
             this.fileName = name
@@ -180,8 +184,12 @@ class MediaStorePlusPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             this.appFolder = appFolder
             this.dirType = dirType
             this.dirName = dirName
+            this.autoDeleteTempFile = autoDeleteTempFile
+
             val saveInfo: SaveInfo? = createOrUpdateFile(path, name, appFolder, dirType, dirName)
-            File(tempFilePath).delete()
+            if(autoDeleteTempFile){
+                File(tempFilePath).delete()
+            }
 
             if (saveInfo != null) {
                 result.success(saveInfo.json)
@@ -759,7 +767,8 @@ class MediaStorePlusPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                         fileName,
                         appFolder,
                         dirType,
-                        dirName
+                        dirName,
+                        autoDeleteTempFile
                     )
                 } else {
                     result.success(null)
